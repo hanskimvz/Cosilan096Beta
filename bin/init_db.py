@@ -1,0 +1,1 @@
+file: '/home/www/bin/init_db.py' not exist!
