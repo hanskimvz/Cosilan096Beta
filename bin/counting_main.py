@@ -1,1 +1,0 @@
-file: '/home/www/bin/counting_main.py' not exist!
