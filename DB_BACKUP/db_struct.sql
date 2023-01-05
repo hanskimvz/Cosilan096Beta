@@ -56,7 +56,7 @@ CREATE TABLE `age_gender` (
   `store_code` varchar(63) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `camera_code` varchar(63) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`pk`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=45 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -660,7 +660,7 @@ CREATE TABLE `users` (
   `flag` enum('y','n') COLLATE utf8mb4_unicode_ci DEFAULT 'n',
   `role` varchar(15) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`pk`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=35 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 -- Dump completed on 2023-01-04  7:34:59
