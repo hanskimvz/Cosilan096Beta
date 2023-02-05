@@ -1,3 +1,5 @@
 @echo off
 cd bin
-python3.exe setup_cosilan.py -W
+python3.exe setup_cosilan097.py -W
+
+pause

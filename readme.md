@@ -6,3 +6,5 @@
 
 2. download Cosilan basic file
     1. download file: https://codeload.github.com/hanskimvz/Cosilan097Beta/zip/refs/heads/main
+
+3. set.bat
