@@ -81,13 +81,12 @@ def update():
     time.sleep(1)
 
     os.chdir("%s/bin" %_ROOT_DIR)
-    import update_main
     
-    # if os.name == 'nt':
-    #     os.system("python3.exe %s %s" %(fname, args))
+    if os.name == 'nt':
+        os.system("python3.exe %s %s" %(fname, args))
     
-    # elif os.name == 'posix':
-    #     os.system("/usr/bin/python3 %s" %fname )
+    elif os.name == 'posix':
+        os.system("/usr/bin/python3 %s" %fname )
     
 
 if __name__ == '__main__':

@@ -39,9 +39,6 @@ from  configparser import ConfigParser
 import uuid
 import shutil
 
-print ("update codes have NOT completed.")
-sys.exit()
-
 op = optparse.OptionParser()
 op.add_option("-V", "--version", action="store_true", dest="_VERSION")
 op.add_option("-W", "--windows-gui", action="store_true", dest="_WIN_GUI")
