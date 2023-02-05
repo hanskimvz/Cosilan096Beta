@@ -69,7 +69,7 @@ def update():
         return False
 
     print ("Downloading update main file ....", end="")
-    fname = "update_main.py"
+    fname = _ROOT_DIR + "/bin/update_main.py"
 
     if os.name == 'nt':
         cmd = _ROOT_DIR + "/bin/wget.exe https://raw.githubusercontent.com/hanskimvz/Cosilan097Beta/main/bin/update_main.py -O " + fname
