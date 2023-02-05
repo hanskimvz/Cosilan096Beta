@@ -26,6 +26,11 @@
 # powershell wget -Uri http://49.235.119.5/download.php?file=bin/update_main.py -Outfile update_main.py
 
 import time, sys, os, uuid
+
+print ("update codes have NOT completed.")
+sys.exit()
+
+
 from http.client import HTTPConnection
 import socket
 import requests
