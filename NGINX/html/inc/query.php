@@ -502,7 +502,7 @@ else if ($_GET['fr'] == 'dashBoard') {
 		// print_r($arr_cfg);
 		$sq_workinghour = queryWorkingHour();
 		for($i=0; $i<4; $i++){
-			$sq = "select sum(counter_val) as sum from ".$DB_CUSTOM['count']." where timestamp >=".($arr_cat['ts_to']-3600*24*84)." and timestamp <".$arr_cat['ts_to']." ".$arr_cfg[$i]['sq_label']." ".$arr_sq['p_sq']."".$sq_workinghour." group by year, month, day";
+			$sq = "select sum(counter_val) as sum from ".$DB_CUSTOM['count']." where timestamp >=".($arr_cat['ts_to']-3600*24*84)." and timestamp <".$arr_cat['ts_to']." ".$arr_cfg[$i]['sq_label']." ".$arr_sq['p_sq']." ".$sq_workinghour." group by year, month, day";
 			// print $sq;
 			$rs = mysqli_query($connect0, $sq);
 			$ave_ref = 0;
@@ -515,13 +515,13 @@ else if ($_GET['fr'] == 'dashBoard') {
 			}
 
 			if ($arr_cfg[$i]['title'] == 'today') {
-				$sq = "select sum(counter_val) as sum from ".$DB_CUSTOM['count']." where timestamp >=".($arr_cat['ts_to']-3600*24)." and timestamp <".$arr_cat['ts_to']." ".$arr_cfg[$i]['sq_label']." ".$arr_sq['p_sq'] ;
+				$sq = "select sum(counter_val) as sum from ".$DB_CUSTOM['count']." where timestamp >=".($arr_cat['ts_to']-3600*24)." and timestamp <".$arr_cat['ts_to']." ".$arr_cfg[$i]['sq_label']." ".$arr_sq['p_sq']." ".$sq_workinghour;
 				$rs = mysqli_query($connect0, $sq);
 				$arr_result[$i]['value'] = mysqli_fetch_row($rs)[0];
 				$arr_result[$i]['percent'] = round($arr_result[$i]['value']/$ave_ref*100,2);
 			}
 			else if ($arr_cfg[$i]['title'] == 'yesterday') {
-					$sq = "select sum(counter_val) as sum from ".$DB_CUSTOM['count']." where timestamp >=".($arr_cat['ts_to']-3600*48)." and timestamp <".($arr_cat['ts_to']-3600*24)." ".$arr_cfg[$i]['sq_label']." ".$arr_sq['p_sq'];
+					$sq = "select sum(counter_val) as sum from ".$DB_CUSTOM['count']." where timestamp >=".($arr_cat['ts_to']-3600*48)." and timestamp <".($arr_cat['ts_to']-3600*24)." ".$arr_cfg[$i]['sq_label']." ".$arr_sq['p_sq']." ".$sq_workinghour;
 				$rs = mysqli_query($connect0, $sq);
 				$arr_result[$i]['value'] = mysqli_fetch_row($rs)[0];
 				$arr_result[$i]['percent'] = round($arr_result[$i]['value']/$ave_ref*100,2);
@@ -542,7 +542,7 @@ else if ($_GET['fr'] == 'dashBoard') {
 			if (!$arr_result[$i]['value']){
 				$arr_result[$i]['value']=0;
 			}
-			// $arr_result[$i]['sql'] = $sq;
+			$arr_result[$i]['sql'] = $sq;
 			// $arr_result[$i]['display'] = $arr_cfg[$i]['display'];
 			// $arr_result[$i]['badge'] = $arr_cfg[$i]['badge'];
 			$arr_result[$i]['display'] = $msg['card_banner'.$i.'_display'];
@@ -552,7 +552,7 @@ else if ($_GET['fr'] == 'dashBoard') {
 		
 		$arr_result['elaspe'] = microtime(true) - $s1;
 		// print_r($arr_result);
-		$json_str = json_encode($arr_result, JSON_NUMERIC_CHECK);
+		$json_str = json_encode($arr_result, JSON_NUMERIC_CHECK|JSON_PRETTY_PRINT);
 	}
 	else if($_GET['page'] == 'footfall') {
 
@@ -583,6 +583,7 @@ else if ($_GET['fr'] == 'dashBoard') {
 			}
 			$sq  = "select year, month, day, wday, hour, min, timestamp, counter_name, 'ct_label' as counter_label, sum(counter_val) as sum  from ".$DB_CUSTOM['count']." where timestamp >=".$from_ts." and timestamp <".$to_ts." ".$arr_cfg[$i]['sq_label']." ".$arr_sq['p_sq']." ".$sq_workinghour." group by year, month, day";
 			// print $sq."\n";
+			$arr_result['bar'][$i]['sql'] = $sq;
 			$rs = mysqli_query($connect0, $sq);
 			$arr_rs[$i] = Result2Json4Curve($rs, date("Y-m-d", $from_ts ), date("Y-m-d", $to_ts-1 ), 'day', $format='array');
 		}
@@ -3102,7 +3103,7 @@ else if($_GET['fr'] == 'webpageConfig') {
  
 }
 
-//Header("Content-type: text/json");
+Header("Content-type: text/json");
 print $json_str;
 	
 	

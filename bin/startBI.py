@@ -157,7 +157,7 @@ def execute_commands():
         return True
 
     global _th
-    st_network = checkNetworkLink()
+    # st_network = checkNetworkLink()
 
     if configVars('software.service.counting.enable') == 'yes':
         if not _th['tlss'] or _th['tlss'].is_alive() == False:

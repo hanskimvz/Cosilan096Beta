@@ -27,8 +27,6 @@ else if(isset($_GET['fr']) && ($_GET['fr'] == 'logout')) {
 	session_destroy();
 }
 else if(isset($_GET['fr']) && ($_GET['fr'] == 'proc_login')) {
-	// print "LOGIN PROCESS";
-	// print_r($_POST);
 	if(!trim($_POST['ID'])) {
 		print 'checkid';
 		exit();
@@ -82,7 +80,6 @@ else if(isset($_GET['fr']) && ($_GET['fr'] == 'proc_login')) {
 		setcookie("role", $arr_user['role'],0,'/');
 		setcookie("selected_language", $_POST['language'],0,'/');
 		setcookie("theme", $_POST['theme'],0,'/');
-		// echo "<script> location.href=('/')</script>";
 		print "loginOK";
 		exit;
 	}		

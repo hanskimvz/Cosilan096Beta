@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 # wget http://49.235.119.5/download.php?file=../bin/sysdaemon.py -O /var/www/bin/sysdaemon.py
 
@@ -26,14 +25,30 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
-
 import os, time, sys
 import socket
 import threading
 
-from functions_s import (_PLATFORM, log, configVars, callCommand, modifyConfig, _SERVER, dbconMaster, outLED, _ROOT_DIR, _DEBUG_DISPLAY, info_to_db)
+from functions_s import (_PLATFORM, _SERVER, _ROOT_DIR, log, configVars, callCommand, modifyConfig, dbconMaster, outLED)
 
+
+def systemDatetime():
+    lt = time.localtime()
+    gt = time.gmtime()
+    tz = time.tzname
+    tz_offset = time.timezone
+    local_time = time.strftime("%Y-%m-%d %H:%M:%S", lt)
+    utc_time   = time.strftime("%Y-%m-%d %H:%M:%S", gt)
+    return {"timezone": tz, "tz_offset": tz_offset *-1, "local_time": local_time, "utc_time": utc_time }
+
+# print (systemDatetime())
+# print(time.strftime("%z", time.gmtime()))
+# gt = time.gmtime()
+# lt = time.localtime()
+# print ((time.mktime(lt) - time.mktime(gt))/3600)
+# # print (time.time() - time.mktime())
+
+# sys.exit()
 if os.name == "nt":
     import winreg
 
@@ -58,26 +73,36 @@ if os.name == "nt":
 
 
 
-def register_auto_start(flag):
-    file_ex = '"%s\\bin\\start.bat" ' %_ROOT_DIR
-    key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, 'Software\Microsoft\Windows\CurrentVersion\Run', 0, winreg.KEY_SET_VALUE)
-    if flag == 'yes':
-        winreg.SetValueEx(key, 'startBI', 0, winreg.REG_SZ, file_ex)
-        print("register to auto start up")
-    else:
-        try:
-            winreg.DeleteValue(key, 'startBI')
-        except:
-            pass
-        print("cancel from auto start up")
+# def register_auto_start(flag):
+#     file_ex = '"%s\\bin\\start.bat" ' %_ROOT_DIR
+#     key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, 'Software\Microsoft\Windows\CurrentVersion\Run', 0, winreg.KEY_SET_VALUE)
+#     if flag == 'yes':
+#         winreg.SetValueEx(key, 'startBI', 0, winreg.REG_SZ, file_ex)
+#         print("register to auto start up")
+#     else:
+#         try:
+#             winreg.DeleteValue(key, 'startBI')
+#         except:
+#             pass
+#         print("cancel from auto start up")
 
-    key.Close()
+#     key.Close()
 
 
 # info_to_db('proc_db', change_log)
 # if _DEBUG_DISPLAY:
 #     print (change_log)
-    
+
+# date_str = '2023-01-31 21:30:00'
+# ts = 1675168200
+# dt = time.strptime(date_str, "%Y-%m-%d %H:%M:%S")
+# ts2 = time.mktime(dt)
+# dd = time.gmtime(ts2)
+# ts3 = time.mktime(dd)
+
+# tx = time.strftime("%Y-%m-%d %H:%M:%S", dd)
+# print (ts, ts2, ts3, tx)
+# sys.exit()
 
 TEMP_MAX = 0
 
@@ -117,10 +142,10 @@ def getMemoryInfo():
 
 def getSystemInfo():
     sysData = {
-    'Kernel_version':str(callCommand("uname -mrs")),
-    'System':str(callCommand("uname -a")),
-    'System_Date':str(callCommand("date")),
-    'Distribution':{}
+        'Kernel_version':str(callCommand("uname -mrs")),
+        'System':str(callCommand("uname -a")),
+        'System_Date':str(callCommand("date")),
+        'Distribution':{}
     }
 
     lsbData = str(callCommand("lsb_release -a")).split('\n')
@@ -147,6 +172,7 @@ def updateTemperature():
     
 
 def register_auto_start(flag):
+    return True
     if not os.name == 'nt':
         print ("windows only")
         return False
@@ -460,7 +486,7 @@ def backupDB(db_name = '', rootpasswd=''):
         rootpasswd = configVars('software.mysql.root_pw')
 
     if os.name=='nt':
-        db_backup_path = _ROOT_DIR + '/DB_BACKUP' 
+        db_backup_path = _ROOT_DIR + '\\DB_BACKUP' 
         exe_dbdump =   '%s\\mysqldump.exe' %configVars('software.mysql.path')
         print(exe_dbdump)
 
@@ -504,6 +530,12 @@ def backupDB(db_name = '', rootpasswd=''):
 
     return True
 
+
+
+
+
+
+
 class sysControlTimer():
     # backup, update 
     def __init__(self, t=5):
@@ -536,8 +568,8 @@ class sysControlTimer():
 
         # COMMON
         if self.i == 23 : #5*24 = 120, every 2 minute
-            if configVars('software.root.update.autoupdate') == 'yes':
-                checkUpdate()
+            # if configVars('software.root.update.autoupdate') == 'yes':
+                # checkUpdate()
             
             if configVars('software.mysql.autobackup.enable') == 'yes':
                 tss_now = time.gmtime(time.time() + int(configVars('system.datetime.timezone.offset')))
@@ -555,15 +587,12 @@ class sysControlTimer():
                         modifyConfig ('software.mysql.autobackup.backed', time.strftime("%Y-%m-%d %H:%M"))
 
             
-            if configVars('software.status.report') =='yes':
-                reportToServer()
-
+            # if configVars('software.status.report') =='yes':
+            #     reportToServer()
         
         self.i +=1
         if self.i >23 :
             self.i = 0
-
-
 
     def start(self):
         str_n = "Starting System Conrtol service as Auto update, reportting, Auto Backup"

@@ -24,7 +24,7 @@
 
 import os, time, sys
 import json
-from functions_s import (configVars, dbconMaster, checkAuthMode, modifyConfig, is_online, message, TZ_OFFSET, log)
+from functions_s import (configVars, dbconMaster, checkAuthMode, modifyConfig, is_online, message, log,TZ_OFFSET)
 
 MYSQL = { 
     "commonParam": configVars('software.mysql.db') + "." + configVars('software.mysql.db_common.table.param'),
@@ -37,16 +37,6 @@ MYSQL = {
     "customCounterLabel": "counter_label",
     "customRtCount": "realtime_screen",
 }
-
-# TZ_OFFSET =  configVars('system.datetime.timezone.offset')
-# try :
-#     TZ_OFFSET = int(TZ_OFFSET)
-
-# except:
-#     TZ_OFFSET = 0
-
-# if not TZ_OFFSET:
-#     TZ_OFFSET = 3600*8
 
 
 def getWriteParam(device_info):
@@ -110,7 +100,7 @@ def updateSimpleParam(device_info, usn, url):
 
 def updateParam(device_info='', param ={}) :
     regdate = time.strftime("%Y-%m-%d %H:%M:%S")
-    print ("updateing param from %s at %s to DB" %(device_info, regdate))
+    print ("updating param from %s at %s to DB" %(device_info, regdate))
 
     if not param['ret'] :
         log.error("Retrieve Param faild from %s at %s" %(device_info, regdate))
@@ -182,21 +172,26 @@ def getLatestTimestamp(table, device_info):
     dbconn0 = dbconMaster()
     with dbconn0:
         cur = dbconn0.cursor()
-        sq = "select timestamp from %s where device_info='%s' order by timestamp desc limit 1 " %(table, device_info)
+        sq = "select timestamp, datetime from %s where device_info='%s' order by timestamp desc limit 1 " %(table, device_info)
+        # print(sq)
         cur.execute(sq)
         row = cur.fetchone()
         # from_t = time.strftime("%Y/%m/%d%%20%H:%M", time.gmtime(row[0])) #count
         # from_t = time.strftime("%Y/%m/%d%%20%H:%M", time.gmtime(row[0]+3600)) #heatmap
         if row :
+            dt = time.strptime(str(row[1]), "%Y-%m-%d %H:%M:%S")
+            # from_t = time.strftime("%Y/%m/%d%%20%H:%M", dt)
             from_t = time.strftime("%Y/%m/%d%%20%H:%M", time.gmtime(row[0]))
+            # readflag = int(time.time()) - int(row[0])
             readflag = int(time.time()) + TZ_OFFSET - int(row[0])
             ts = int(row[0])
 
         else :
             from_t = "2018/11/12%2000:00"
+            dt = time.strptime(from_t, "%Y/%m/%d%%20%H:%M")
             readflag = 115200
             ts = 0
-        return from_t, readflag, ts
+        return from_t, dt, readflag, ts
 
 
 def updateCountingReport(device_info='', arr_record=[]):
@@ -302,13 +297,15 @@ def getDeviceListFromDB():
 
 def getDeviceInfoFromDB(device_info):
     dbconn0 = dbconMaster()
+    pk=0
     with dbconn0:
         cur = dbconn0.cursor()
         sq = "select pk, db_name, heatmap, countrpt from " + MYSQL['commonParam'] + " where device_info=%s" 
         # print sq
         cur.execute(sq, device_info)
-        row = cur.fetchone()
-        pk, db_name, heatmap, countrpt =  row
+        if cur.rowcount:
+            row = cur.fetchone()
+            pk, db_name, heatmap, countrpt =  row
     if pk:
         return {"db_name": db_name, "heatmap": heatmap, "countrpt": countrpt}
     return False
@@ -345,121 +342,6 @@ def updateFaceThumnmail(face_dict):
         cur.execute(sq, tuple(record))
         dbconn0.commit()
 
-# def getRtCounting(cursor, db_name, counters, ct_labels):
-#     ct_mask = list()
-#     arr_t = list()
-#     arr_rs = dict()
-#     arr_rs_y = dict()
-#     arr_f = set()
-
-#     for day in counters:
-#         for ct_label in counters[day]:
-#             if ct_label in ct_labels:
-#                 if day == 'today':
-#                     ct_mask.append("(counter_label='%s' and timestamp>%d)" %(ct_label, counters['today'][ct_label]['latest']))
-#                     arr_rs[ct_label] =  {"start":0, "end":0, "rtcount":0,  "count":0}
-#                 if day == 'yesterday':
-#                     arr_rs_y[ct_label] =  {"start":0, "end":0, "rtcount":0,  "count":counters['yesterday'][ct_label]['count']}
-#     # print(arr_rs)
-#     sq_s = ""
-#     if (ct_mask) :
-#         sq_s = ' or '.join(ct_mask)
-#         sq_s = ' and (%s)' %(sq_s)
-#     sq = "select timestamp, counter_val, device_info, counter_label, counter_name from common.counting_event where db_name='%s' %s  order by timestamp asc" %(db_name, sq_s) 
-#     # print (sq)
-
-#     cursor.execute(sq)
-#     for row in cursor.fetchall():
-#         arr_t.append({
-#             "timestamp": row[0],
-#             "count": row[1],
-#             "device_info": row[2],
-#             "ct_label": row[3],
-#             "ct_name": row[4]
-#         })
-#     # for r in arr_t:
-#     #     print(r)
-#     for assoc in arr_t:
-#         label = "%s&%s&%s" %(assoc['device_info'], assoc['ct_label'], assoc['ct_name'])
-#         if not (label in arr_f) :
-#             arr_f.add(label)
-#             arr_rs[assoc['ct_label']]["start"] += assoc['count']
-#     arr_t.reverse()
-#     arr_f.clear()
-#     for assoc in arr_t:
-#         label = "%s&%s&%s" %(assoc['device_info'], assoc['ct_label'], assoc['ct_name'])
-#         if not (label in arr_f) :
-#             arr_f.add(label)
-#             arr_rs[assoc['ct_label']]["end"] += assoc['count']
-    
-#     for ct_label in counters['today']:
-#         if ct_label in ct_labels:
-#             arr_rs[ct_label]["rtcount"] = arr_rs[ct_label]["end"] - arr_rs[ct_label]["start"]
-#             arr_rs[ct_label]["count"] = counters['today'][ct_label]['count'] + arr_rs[ct_label]["rtcount"]
-
-#     # print(arr_rs)
-#     return {'today': arr_rs, 'yesterday': arr_rs_y}
-
-
-# def updateRtCounting(dbconn0, db_name):
-#     ts = time.time()
-#     ct_labels = set()
-#     counters = {"today":{}, "yesterday":{}}
-#     arr_number = list()
-#     cur = dbconn0.cursor()
-
-#     sq = "select pk, category, name, ct_labels, rule, text, position from %s.%s where enable='yes' and (name like 'number%%' or category='crpt') " %(db_name, MYSQL['customRtCount'])
-#     cur.execute(sq)
-#     for row in cur.fetchall():
-#         if row[2].startswith('number'):
-#             for c in json.loads(row[3]):
-#                 ct_labels.add(c)
-#             arr_number.append({
-#                 "pk": row[0],
-#                 "name": row[2],
-#                 "labels": json.loads(row[3]),
-#                 "rule": row[4]
-#             })
-#         elif row[1] == 'crpt':
-#             day = "today" if int(row[2]) == 0 else "yesterday"
-#             counters[day][row[3]] = {
-#                 "count": int(row[5]),
-#                 "latest": int(row[6]),
-#             }
-#     # print("ct_labels", ct_labels)
-#     # print("numbers", arr_number)
-#     # print("counters", counters)
-    
-#     rt_counting = getRtCounting(cur, db_name, counters, ct_labels)
-#     arr_sq = list()
-#     operator = ['+', '-', '/']
-#     for day in rt_counting:
-#         for assoc in arr_number:
-#             # print (day, rt_counting[day], assoc)
-#             if day == assoc['rule']:
-#                 sq = "update %s.realtime_screen set text='%d' where pk=%d" %(db_name, rt_counting[day][assoc['labels'][0]]['count'], assoc['pk'])
-#                 arr_sq.append(sq)
-#             elif day=='today':
-#                 for op in operator:
-#                     ex = assoc['rule'].split(op)
-#                     if len(ex) == 2:
-#                         if op == '+':
-#                             num = rt_counting['today'][ex[0]]['count'] + rt_counting['today'][ex[1]]['count']
-#                         elif op == '-':
-#                             num = rt_counting['today'][ex[0]]['count'] - rt_counting['today'][ex[1]]['count']
-#                         elif op == '/':
-#                             num = rt_counting['today'][ex[0]]['count'] / rt_counting['today'][ex[1]]['count']
-#                         else :
-#                             continue
-#                         sq = "update %s.realtime_screen set text='%d' where pk=%d" %(db_name, num, assoc['pk'])
-#                         arr_sq.append(sq)
-    
-#     for sq in arr_sq:
-#         print (sq)
-#         cur.execute(sq)
-#     dbconn0.commit()
-#     print ("getRtCounting", time.time()-ts)        
-
 
 def updateEventCount(event_rs):
     dbconn0 = dbconMaster()
@@ -490,7 +372,61 @@ def updateEventCount(event_rs):
         # updateRtCounting(dbconn0, db_name)
         dbconn0.commit()
 
+def updateEventSnapshot(event_rs):
+    dbconn0 = dbconMaster()
+    with dbconn0:
+        cur = dbconn0.cursor()
+    
 
+def calTimestamp(db_name):
+    dbCon = dbconMaster(host='', user = 'ct_user', password = '13579',  charset = 'utf8', port=3306)
+    with dbCon:
+        cur = dbCon.cursor()
+        sq = "select pk, timestamp, year, month, day, hour, min  from %s.count_tenmin order by pk desc limit 1000,10 " %db_name
+        cur.execute(sq)
+        rows =cur.fetchall()
+        for r in rows:
+            # print(r)
+            strn = "%04d/%02d/%02d %02d:%02d" %(r[2],r[3],r[4],r[5],r[6])
+            dt = time.strptime(strn,"%Y/%m/%d %H:%M")
+            gt = time.localtime(int(r[1]))
+            ts1 = time.mktime(dt)
+            ts2 = time.mktime(gt)
+            diff = ts1-ts2
+            ts = int(r[1]) - diff
+            print (strn, r[1],ts, dt, gt, int(diff/3600))
+
+
+
+def deDuplicate(db_name):
+    query_set = set()
+
+    dbCon = dbconMaster(host='', user = 'ct_user', password = '13579',  charset = 'utf8', port=3306)
+    with dbCon:
+        cur = dbCon.cursor()
+        sq = "select device_info, counter_label, counter_name from %s.count_tenmin group by device_info, counter_name " %db_name
+        # print (sq)
+        cur.execute(sq)
+        rows =cur.fetchall()
+        for r in rows:
+            # print(r)
+            query_set.add( "device_info='%s' and  counter_name='%s'" %(r[0], r[2]))
+
+        # print (query_set)
+        for q_set in query_set:
+            sq = "select pk, timestamp from %s.count_tenmin where %s order by timestamp asc" %(db_name, q_set)
+            cur.execute(sq)
+            rows = cur.fetchall()
+            for r in rows:
+                sq = "select pk, timestamp from %s.count_tenmin where %s and timestamp=%d " %(db_name, q_set, r[1])
+                cur.execute(sq)
+                if int(cur.rowcount) >1:
+                    print (r[0], r[1], q_set)
+                # print (sq)
+
+# deDuplicate('cnt_demo')
+# calTimestamp('cnt_demo')
+# sys.exit()
 
 if __name__ == '__main__':
     # x = getLatestTimestamp( MYSQL['commonCounting'], 'mac=001323A00326&brand=CAP&model=NS602HD' )

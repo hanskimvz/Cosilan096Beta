@@ -97,6 +97,7 @@ if __name__ == '__main__':
     else:
         print ("No need to update new python")
 
+
 ############################################################################################################################################################
 
 import socket
@@ -109,6 +110,7 @@ import locale
 import optparse
 from  configparser import ConfigParser
 import uuid
+import shutil
 
 op = optparse.OptionParser()
 op.add_option("-V", "--version", action="store_true", dest="_VERSION")
@@ -134,8 +136,6 @@ version = {
 }
 
 config_db_file = _ROOT_DIR + "/bin/param.db"
-
-TZ_OFFSET = 3600*8
 
 if not os.path.isdir(_ROOT_DIR + "/bin/log"):
     os.mkdir(_ROOT_DIR + "/bin/log")
@@ -173,6 +173,23 @@ def get_fileist():
 
     return json.loads(body)
 
+# def get_fileist():
+#     global _ROOT_DIR
+#     fname = _ROOT_DIR + "/bin/filelist.json"
+#     with open(fname, "r", encoding="utf8") as f:
+#         body = f.read()
+
+#     text = ""
+#     for line in body.splitlines():
+#         line = line.split("#")[0]
+#         line = line.split("//")[0]
+#         line = line.strip()
+        
+#         if not line:
+#             continue
+#         text += line
+
+#     return json.loads(text)
 
 ########################################################################################################################################################
 #####################################################   File download   ################################################################################
@@ -245,7 +262,7 @@ def checkAvailabe():
         server_ts = 0
 
     if abs(int(server_ts) - int(time.time())) > 10:
-        msg = "Server page not accessable"
+        msg = "Server page not accessable %d, %d" %(int(server_ts), int(time.time()))
         strn = "Page error"
         errFlag = True
     else:
@@ -295,7 +312,7 @@ def patchHtml():
         conn.putrequest("GET", "/download.php?file=%s" %file) 
         conn.endheaders()
         rs = conn.getresponse()
-        prints(fname)
+        prints(fname, end="", flush=True)
         if not (os.path.isdir(os.path.dirname(fname))) :
             os.mkdir(os.path.dirname(fname))
 
@@ -322,16 +339,17 @@ def patchBin():
     
     for i, file in enumerate(arrFiles['bin']):
         fname = "%s/%s" %(_ROOT_DIR, file)
-        prints(fname)
+        prints(fname, end="", flush=True)
         if file == "bin/rtScreen.json" and os.path.isfile(fname):
-            if os.name == 'nt':
-                cmd_str = "copy \"%s\" \"%s.bk\"" %(fname, fname)
-                cmd_str = cmd_str.replace("/", "\\")
-            else :
-                cmd_str = "cp \"%s\" \"%s.bk\"" %(fname, fname)
-            os.system(cmd_str)
+            shutil.copyfile(fname, "%s.bk" %fname)
+            # if os.name == 'nt':
+            #     cmd_str = "copy \"%s\" \"%s.bk\"" %(fname, fname)
+            #     cmd_str = cmd_str.replace("/", "\\")
+            # else :
+            #     cmd_str = "cp \"%s\" \"%s.bk\"" %(fname, fname)
+            # os.system(cmd_str)
         if file.startswith("bin/template"):
-            if os.path.isfile(file):
+            if os.path.isfile(fname):
                 continue
         conn.putrequest("GET", "/download.php?file=%s" %file) 
         conn.endheaders()
@@ -417,6 +435,13 @@ def makeLink(): # windows only
         f.write(rootdrive + "\n")
         f.write("cd \"" + _ROOT_DIR + "\\bin\"\n")
         f.write("python3.exe rtScreen.py\n")
+
+    fname = _ROOT_DIR + "\\RtScreenCanvas.bat" 
+    with open(fname, "w") as f:
+        f.write(rootdrive + "\n")
+        f.write("cd \"" + _ROOT_DIR + "\\bin\"\n")
+        f.write("python3.exe rtScreenCanvas.py\n")
+
 
     # fname = _ROOT_DIR + "\\repairDB.bat" 
     # with open(fname, "w") as f:
@@ -593,6 +618,7 @@ def patchParamDb():
     arr_sq.append(sq)
     arr_sq.append('commit')
     for i, sq in enumerate(arr_sq):
+        # prints(sq)
         if sq == 'commit':
             dbsqcon.commit()
             continue
@@ -651,7 +677,7 @@ def patchParamDb():
             arr_sq.append('delete from param_tbl where prino=%d' %row[0])
 
     for i, sq in enumerate(arr_sq):
-        prints(sq)
+        prints(sq, end="", flush=True)
         progress((i+1), len(arr_sq), "patchParamDB")
         if sq == 'commit':
             dbsqcon.commit()
@@ -662,6 +688,7 @@ def patchParamDb():
     if _SERVER_MAC != mac :    
         # os.unlink(fname_ini)
         pass
+    print()
     prints("patching Param DB Finished")
     print()
 
@@ -753,6 +780,7 @@ def migrateParam():
 ########################################################################################################################################################
 ########################   MYSQL //  MariaDB  ##########################################################################################################
 #sc create MariaDB binpath= E:\Cosilan\Mariadb\bin\mysqld.exe
+
 def findMysqlPaths(): 
 	#find all mysql, mariadb paths on system
 	arr_path = list()
@@ -862,7 +890,8 @@ def checkMyIni():
 # plugin-dir=E:/MariaDB10/lib/plugin
 # default-character-set	= utf8mb4
     fname = os.path.dirname(configVars('software.mysql.path')) + "\\data\\my.ini"
-    print (fname)
+    print()
+    print(fname)
     cfg = ConfigParser(allow_no_value=True)
     cfg.read(fname)
     cfg.set('mysqld', 'character-set-server', 'utf8mb4')
@@ -1127,7 +1156,7 @@ def patchWebConfig():
         cur.execute(sq )
         rows = cur.fetchall()
         for row in rows:
-            if row[0] in ['common','information_schema', 'mysql', 'performance_schema', 'test'] :
+            if row[0] in ['common','information_schema', 'mysql', 'performance_schema', 'test', 'sys'] :
                 continue
             arr_db.append(row[0])
         prints(arr_db)
@@ -1260,14 +1289,14 @@ def progress(current, total, target):
         for i in range(0, 100, 2) :
             line += "=" if (i <= p) else " "
 
-        print("\r %d%%    [%s]" %(int(p), line), end="")
+        print("\r %02d%%    [%s]" %(int(p), line), end="", flush=True)
 
-def prints(strs, cls="info"):
+def prints(strs, cls="info", **kwargs):
     if type(strs) is list or type(strs) is dict:
         strs = json.dumps(strs)
     strs = str(strs)
 
-    print(strs)
+    print(strs, **kwargs)
     if os.name == 'nt' and _WIN_GUI and window :
         tx.insert("end", strs + "\n")
         if cls == "error" :
@@ -1301,9 +1330,7 @@ def infoBox(pad=None):
         strs = [""]*4
         strs[0]  = "======================================================================================================="
         for i, l in enumerate(arr):
-            if not l in lang:
-                lang[l] = l.replace("txt_", "")
-            strs[1] += "%-20s " %lang[l]
+            strs[1] += "%-20s " %(arr[i].replace("txt_", ""))
             strs[2] += "%-20s " %strn[i]
         strs[3]  = "======================================================================================================="
         prints ("\n".join(strs))
@@ -1388,8 +1415,6 @@ def windowsGUI(window):
     btnPad.pack(side="top", expand=False, padx=10, pady=10)
     buttonPad(btnPad)
     
-
-    
     tx.pack(side="top", pady=5)
 
     prints("Update Tool for Windows")
@@ -1436,23 +1461,30 @@ def startUpdate():
         patchWebConfig()
         makeLink()
         postMYSQL()
+        delUnnessaries()
         btnStart['state'] = "normal"
 
     
     else :
-        return False
-        ServerSt = checkAvailabe()
-        infoBox(None, ServerSt)
+        st = checkAvailabe()
+        version['server_st'] = "online" if st else "offline"
+        infoBox(None)
+        if not st:
+            return False
+
         patchHtml()
         patchBin()
+        patchRtScreen()
+        checkPhpIni()
         patchParamDb()
         migrateParam()
+        # checkMyIni()
         patchMariaDB()
         patchLanguage()
         patchWebConfig()
         makeLink()
-
-
+        postMYSQL()
+        delUnnessaries()
 
 
 def patchLangPack():

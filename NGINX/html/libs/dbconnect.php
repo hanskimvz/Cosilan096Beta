@@ -1,8 +1,6 @@
 <?PHP
-
 // echo php_uname();
 // echo PHP_OS; // Linux , WINNT
-
 // session_start();
 for ($i=0; $i<3; $i++) {
 	chdir("../");
@@ -12,31 +10,20 @@ for ($i=0; $i<3; $i++) {
 	}
 }
 
-// print $ROOT_DIR;
-
-// Version 0.93, does not support config.ini file, only support bin/param.db, param_tbl
-
 $fname = $ROOT_DIR."/bin/param.db";
+// Centos 8.x need to readwrite : selinux
+// chcon  -t httpd_sys_rw_content_t /home/www/bin/param.db
+// chcon  -t httpd_sys_rw_content_t /home/www/bin/
+
 $db = new SQLite3($fname);
 	
 $sq = "select groupPath, entryName, entryValue from param_tbl ";
-// print $sq;
 $rs = $db->query($sq);
-
 $configVars = array();
 while ($row = $rs->fetchArray()) {
 	$configVars[$row['groupPath'].".".$row['entryName']] = $row['entryValue'];
 }
 $db->close();
-
-
-// if (PHP_OS == "WINNT") {
-// 	$mysql_ini = parse_ini_file($ROOT_DIR."\\MariaDB\\data\\my.ini", true, INI_SCANNER_RAW);
-// 	if (isset($mysql_ini['mysqld']['port'])) {
-// 		$MYSQL_PORT = $mysql_ini['mysqld']['port'];
-// 	}
-// 	unset($mysql_ini);
-// }
 
 $MYSQL_PORT = $configVars['software.mysql.port'];
 if (!$MYSQL_PORT) {
@@ -60,14 +47,6 @@ if($_SESSION['db_name'] != 'none') {
 	//print ($sq);
 	mysqli_query($connect0, $sq);
 	mysqli_query($connect, $sq);
-	
-	// $sq = "select body from ".$_SESSION['db_name'].".webpage_config where name='document_title'";
-	// $_DOCUMENT_TITLE = mysqli_fetch_row(mysqli_query($connect,$sq ))[0];
-	// $sq = "select body from ".$_SESSION['db_name'].".webpage_config where name='host_title'";
-	// $_HOST_TITLE = mysqli_fetch_row(mysqli_query($connect,$sq ))[0];
-	// $sq = "select body from ".$_SESSION['db_name'].".webpage_config where name='title_logo'";
-	// $_TITLE_LOGO = '<img src = "'.(mysqli_fetch_row(mysqli_query($connect,$sq ))[0]).'" height="26px">';
-	
 }
 
 $DB_COMMON['account'] 	= 'common.'.$configVars['software.mysql.db_common.table.user'];
@@ -99,7 +78,10 @@ $DB_CUSTOM['web_config']= $_SESSION['db_name'].".webpage_config";
 $user_img = "<i class=\"fa fa-user-o\"></i> ";
 
 $LOGIN_PAGE = "/admin.php?fr=login";
-$CLOUD_SERVER = "49.235.119.5";
+// $CLOUD_SERVER = "49.235.119.5";
+$CLOUD_SERVER = "14.6.84.62";
 $DEVELOPER_WEB = "47.56.150.14";
 
+// define(_TZ_OFFSET, 28800); // China
+define(_TZ_OFFSET, 32400); // Korea
 ?>

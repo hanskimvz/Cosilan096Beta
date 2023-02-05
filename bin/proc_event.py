@@ -28,7 +28,7 @@ import socket
 
 from functions_s import (recv_timeout, configVars, addSlashes, log,  modifyConfig, info_to_db, message)
 from parse_functions import  parseEventData
-from db_functions import updateEventCount, updateFaceThumnmail
+from db_functions import updateEventCount, updateFaceThumnmail, updateEventSnapshot
 
 def getEventPush(conn):
     data= recv_timeout(conn)
@@ -48,6 +48,8 @@ def event_thread(conn):
             updateEventCount(ev)
         elif ev['type'] == 'face':
             updateFaceThumnmail(ev)
+        elif ev['type'] == 'snapshot':
+            updateEventSnapshot(ev)
 
 def test():
     port= 5031

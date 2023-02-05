@@ -27,9 +27,14 @@
 			
 			$rs = mysqli_query($connect, $sq);
 			while($row = mysqli_fetch_row($rs)){
-				$TABLE_BODY .= '<tr>
-					<td>'.$row[0].'</td><td>'.$row[1].'</td><td>'.$row[2].'</td><td>'.$row[3].'</td><td>'.$row[4].'</td><td>'.$row[5].'</td><td>'.$row[6].'</td><td>'.$row[7].'</td><td>'.$row[8].'</td><td>'.$row[9].'</td>
-				</tr>';
+				$TABLE_BODY .= '<tr>';
+				for ($j=0; $j<sizeof($row); $j++) {
+					$TABLE_BODY .= '<td>'.$row[$j].'</td>';
+				}
+				$TABLE_BODY .= '</tr>';
+				// $TABLE_BODY .= '<tr>
+				// 	<td>'.$row[0].'</td><td>'.$row[1].'</td><td>'.$row[2].'</td><td>'.$row[3].'</td><td>'.$row[4].'</td><td>'.$row[5].'</td><td>'.$row[6].'</td><td>'.$row[7].'</td><td>'.$row[8].'</td><td>'.$row[9].'</td>
+				// </tr>';
 			}		
 			break;
 		
@@ -51,7 +56,6 @@
 		
 			$rs = mysqli_query($connect, $sq);
 			while($row = mysqli_fetch_row($rs)){
-				// $row[4] = '<span class="small">'.$row[4].'</span>';
 				$TABLE_BODY .= '<tr>';
 				for ($j=0; $j<9; $j++) {
 					$TABLE_BODY .= '<td>'.$row[$j].'</td>';
@@ -62,7 +66,7 @@
 			break;
 	
 		case 'heatmap':
-			$sq = "select pk, device_info, cast(concat (year,'-', month,'-', day,' ', hour,':00') as datetime) as date, timestamp, body_csv as heatmap, camera_code, store_code, square_code from ".$DB_CUSTOM['heatmap']." ";	
+			$sq = "select pk, device_info, timestamp, cast(concat (year,'-', month,'-', day,' ', hour,':00') as datetime) as date, body_csv as heatmap, camera_code, store_code, square_code from ".$DB_CUSTOM['heatmap']." ";	
 			if($_GET['search']) {
 				$sq .= " where device_info like '%".trim($_GET['search'])."%'";
 			}
@@ -97,8 +101,8 @@
 						}
 					}
 				}
-				$row[4] ='<span OnClick="">'.draw_heatmap($str, $MAX, 1, $img).'</span>';		
-				
+				$row[4] = draw_heatmap($str, $MAX, 1, $img);
+			
 				unset($str);
 				$TABLE_BODY .='<tr>';
 				for($i=0; $i<sizeof($row); $i++) {
@@ -151,7 +155,7 @@
 			
 			$rs = mysqli_query($connect0, $sq);
 			while($row = mysqli_fetch_row($rs)){
-				$delay_sec = (time()+8*3600)-strtotime($row[12]);
+				$delay_sec = time() + TZ_OFFSET - strtotime($row[12]);
 				if($delay_sec < 3660 ){
 					$row[13] = '<span class="badge badge-success">'.date("H:i:s", $delay_sec).'</span>';
 				}
@@ -164,8 +168,11 @@
 				# $row[1] ==> str_replace("&", "&amp;", $row[1]) because of IE Error
 				$row[1] = '<a href = "admin.php?fr=view_param&'.$row[1].'" target="aaa">'.str_replace("&", "&amp;", $row[1]).'</a>';
 				for ($j=4; $j<11; $j++) {
-					$row[$j] = $row[$j]=='y' ? "y" : "<font color=#AAAAAA>n</font>";
+					if ($row[$j] == 'n') {
+						$row[$j] = "<font color=#AAAAAA>n</font>";
+					}
 				}
+
 				$TABLE_BODY .= '<tr>';
 				for ($j=0; $j<17; $j++){
 					$TABLE_BODY .= '<td>'.$row[$j].'</td>';
@@ -196,6 +203,9 @@
 			while($row = mysqli_fetch_row($rs)){
 				$TABLE_BODY .='<tr>';
 				for($i=0; $i<sizeof($row); $i++) {
+					// if ($i==3) {
+					// 	$row[$i].=date("Y-m-d H:i:s", $row[$i]);
+					// }
 					$TABLE_BODY .='<td>'.$row[$i].'</td>';
 				}
 				$TABLE_BODY .='</tr>';
@@ -233,7 +243,7 @@
 
 
 		case 'heatmap_common':
-			$sq = "select pk, device_info,regdate, datetime, timestamp, body_csv as heatmap,flag,status from ".$DB_COMMON['heatmap']." ";	
+			$sq = "select pk, regdate, device_info, timestamp, datetime, body_csv as heatmap, flag, status from ".$DB_COMMON['heatmap']." ";	
 			if($_GET['search']) {
 				$sq .= " where device_info like '%".trim($_GET['search'])."%'";
 			}

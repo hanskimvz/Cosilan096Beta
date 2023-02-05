@@ -56,8 +56,10 @@ _MANAGER_PORT = opt._MANAGER_PORT if opt._MANAGER_PORT else 5999
 
 _PLATFORM = getPlatformName()
 _ROOT_DIR = os.path.dirname( os.path.dirname(os.path.abspath(sys.argv[0])) )
+
 config_db_file = _ROOT_DIR + "/bin/param.db"
 log_file_name  = _ROOT_DIR + "/bin/log/bi.log"
+cgis_file_name = _ROOT_DIR + "/bin/cgis.json"
 
 # Orange Pi
 if _PLATFORM == 'OPAVIS':
@@ -86,8 +88,8 @@ if _PLATFORM == 'OPAVIS':
 ################ CONFIG and Variables ####################################
 _SERVER = ''
 _SERVER_MAC = ''
-TZ_OFFSET = 0
 PROBE_INTERVAL = 0
+CGIS = dict()
 
 ########################### log  ###########################
 log = logging.getLogger("startBI")
@@ -224,7 +226,11 @@ def modifyConfig(groupPath, entryValue) :
 			return False
 	return True
 
+def load_cgis():
+	with open (cgis_file_name, "r", encoding="utf8") as f:
+		body = f.read()
 
+	return json.loads(body)
 
 #################### FUNCTIONS ##############################
 
@@ -628,13 +634,10 @@ def getMysqlPort(fname=''):
 	return port
 
 ########################  PARSING DATA ###################################################################################################################
-# ==> move to func_parse.py
+# ==> move to parse_func.py
 
 
 ################################################ Main #############################
-
-# info_to_db('functions', change_log)
-# message(change_log)
 
 modifyConfig("software.status.start_time", int(time.time()))
 modifyConfig("software.service.root_dir", _ROOT_DIR)
@@ -645,7 +648,6 @@ modifyConfig("software.service.root_dir", _ROOT_DIR)
 
 _SERVER = configVars('software.root.update_server.address')
 _SERVER_MAC = configVars('software.root.update_server.mac')
-
 TZ_OFFSET =  configVars('system.datetime.timezone.offset')
 try :
     TZ_OFFSET = int(TZ_OFFSET)
@@ -653,7 +655,6 @@ except:
     TZ_OFFSET = 0
 if not TZ_OFFSET:
     TZ_OFFSET = 3600*8
-
 PROBE_INTERVAL = configVars('software.service.probe_interval')
 try:
     PROBE_INTERVAL = int(PROBE_INTERVAL)
@@ -679,7 +680,7 @@ MYSQL = {
     "customCounterLabel": configVars('software.mysql.db_custom.table.counter_label'),
     "customRtCount": configVars("software.mysql.db_custom.table.rtscreen")
 }
-
+CGIS = load_cgis()
 # print(MYSQL)
 # a = list_device()
 # print(a)

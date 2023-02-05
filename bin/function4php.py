@@ -1,1 +1,0 @@
-file: '/home/www/bin/function4php.py' not exist!

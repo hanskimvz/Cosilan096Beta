@@ -1,19 +1,33 @@
-change_log = """
-###############################################################################
-parse_functions.py
-2022-03-26, counting_main to (tlss_counting, active_counting and proc_event)
+# Copyright (c) 2022, Hans kim
 
-###############################################################################
-"""
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+# 1. Redistributions of source code must retain the above copyright
+# notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution.
+
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+# CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+# INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import time
 from urllib.parse import urlparse, parse_qsl, unquote
 import re, base64
 
-from functions_s import (addSlashes, TZ_OFFSET, log, info_to_db, message)
+from functions_s import (addSlashes, log, message, TZ_OFFSET)
 
-info_to_db('parse_functions', change_log)
-message (change_log)
     
 def parseParam(body, device_family='IPN'): #body <type byte>
     dict_rs = {'usn':None, 'brand':None, 'productid':None, 'model':None, 'mac':None, 'ip4mode':None, 'ip4address_dhcp':None,  'ip4address':None, 'url':None, 'lic_pro':None, 'lic_count':None, 'lic_surv':None, 'heatmap':None, 'countrpt':None, 'macsniff':None, 'face_det':None, 'param':None, 'device_family':device_family, 'ret':False}
@@ -31,14 +45,14 @@ def parseParam(body, device_family='IPN'): #body <type byte>
     body = body.strip()
 
     regex = dict()
-    regex['usn']        = re.compile(r"VERSION.serialno=(\w+)\n", re.IGNORECASE)
-    regex['brand']      = re.compile(r"BRAND.brand=(.+)\n", re.IGNORECASE)
-    regex['productid']  = re.compile(r"BRAND.Model.productid=(\w+)\n", re.IGNORECASE)
-    regex['model']      = re.compile(r"BRAND.Product.shortname=(.+)\n", re.IGNORECASE)
-    regex['mac']        = re.compile(r"NETWORK.Eth0.mac=(.+)\n", re.IGNORECASE)
-    regex['ip4address'] = re.compile(r"NETWORK.Eth0.ipaddress=(.+)\n", re.IGNORECASE)
-    regex['dhcp_enable']= re.compile(r"NETWORK.Eth0.dhcp.enable=(.+)\n", re.IGNORECASE)
-    regex['dhcp_ip']    = re.compile(r"NETWORK.Eth0.dhcp.ipaddress=(.+)\n", re.IGNORECASE)
+    regex['usn']        = re.compile(r"VERSION.serialno=(\w+)", re.IGNORECASE)
+    regex['brand']      = re.compile(r"BRAND.brand=(.+)", re.IGNORECASE)
+    regex['productid']  = re.compile(r"BRAND.Model.productid=(\w+)", re.IGNORECASE)
+    regex['model']      = re.compile(r"BRAND.Product.shortname=(.+)", re.IGNORECASE)
+    regex['mac']        = re.compile(r"NETWORK.Eth0.mac=(.+)", re.IGNORECASE)
+    regex['ip4address'] = re.compile(r"NETWORK.Eth0.ipaddress=(.+)", re.IGNORECASE)
+    regex['dhcp_enable']= re.compile(r"NETWORK.Eth0.dhcp.enable=(.+)", re.IGNORECASE)
+    regex['dhcp_ip']    = re.compile(r"NETWORK.Eth0.dhcp.ipaddress=(.+)", re.IGNORECASE)
 
     regex['lic_pro']    = re.compile(r".licenseinfo=Pro", re.IGNORECASE)
     regex['lic_count']  = re.compile(r".licenseinfo=Count", re.IGNORECASE)
@@ -57,14 +71,22 @@ def parseParam(body, device_family='IPN'): #body <type byte>
         if m:
             dict_rs[k] = m.group(1).strip()
     
-    dict_rs['mac'] = dict_rs['mac'].replace(":", "").upper()
+    if dict_rs.get('mac'):
+        dict_rs['mac'] = dict_rs['mac'].replace(":", "").upper()
+    else :
+        print ("mac not exist")
+        return False
     dict_rs['face_det'] = 'y' if (dict_rs['face_det'] == 'y' and dict_rs['face_det_c'] == 'y') else 'n'
     dict_rs['url'] = dict_rs['ip4address_dhcp'] if dict_rs['ip4mode'] == "dhcp" else dict_rs['ip4address']
-    dict_rs['ip4mode'] = "dhcp" if dict_rs['dhcp_enable'] =='yes' else "static"
+    if dict_rs.get('dhcp_enable'):
+        dict_rs['ip4mode'] = "dhcp" if dict_rs['dhcp_enable'] =='yes' else "static"
+        del(dict_rs['dhcp_enable'])
+    else:
+        print ("dhcp_enable not exist")
     dict_rs['param'] = addSlashes(body)
     
     del(dict_rs['face_det_c'])
-    del(dict_rs['dhcp_enable'])
+    
     # del(dict_rs['dhcp_ip'])
 
     dict_rs['ret'] = True
@@ -104,7 +126,8 @@ def parseCountReport(body): # body type byte
             tss = time.strptime(field[0], "%Y/%m/%d %H:%M:%S")
         except:
             tss = time.strptime(field[0], "%Y-%m-%d %H:%M:%S")
-        timestamp = int(time.mktime(tss)) + TZ_OFFSET
+
+        timestamp = int(time.mktime(tss))  + TZ_OFFSET
         for j in range(0, numberofcounters):
             counter_value = int(field[j+1])
             if counter_value < 0 :
@@ -117,27 +140,31 @@ def parseCountReport(body): # body type byte
 
 
 def parseHeatmapData(body):
-	arr_record = []
-	try:
-		body =  body.decode('utf-8')
-	except Exception as e:
-		log.warning(str(e))
-		return False
-	body = body.strip()
+    arr_record = []
+    try:
+        body =  body.decode('utf-8')
+    except Exception as e:
+        log.warning(str(e))
+        return False
+    body = body.strip()
 
-	line = body.splitlines()
-	numberofrecords = int(len(line)/46)
-	for i in range (0, numberofrecords) :
-		tss = time.strptime(line[i*46], "%Y-%m-%d_%H:%M:%S")
-		datetime = time.strftime("%Y-%m-%d %H:00:00", tss)
-		tss = time.strptime(datetime, "%Y-%m-%d %H:%M:%S")
-		timestamp = int(time.mktime(tss)) + TZ_OFFSET 
-		str_csv = ""
-		for j in range(1, 45) :
-			str_csv += (line[j+i*46]+"\r\n")
-		arr_record.append({"timestamp":timestamp, "datetime":datetime, "heatmap":str_csv})
-	
-	return arr_record
+    line = body.splitlines()
+    numberofrecords = int(len(line)/46)
+    for i in range (0, numberofrecords) :
+        try:
+            tss = time.strptime(line[i*46], "%Y-%m-%d_%H:%M:%S")
+        except:
+            print (body)
+            return []
+        datetime = time.strftime("%Y-%m-%d %H:00:00", tss)
+        tss = time.strptime(datetime, "%Y-%m-%d %H:%M:%S")
+        timestamp = int(time.mktime(tss)) + TZ_OFFSET
+        str_csv = ""
+        for j in range(1, 45) :
+            str_csv += (line[j+i*46]+"\r\n")
+        arr_record.append({"timestamp":timestamp, "datetime":datetime, "heatmap":str_csv})
+
+    return arr_record
 
 def parseEventDatax(body, tunnel="HTTP"):
 	arr_rs = []
@@ -184,66 +211,6 @@ def parseEventDatax(body, tunnel="HTTP"):
 		arr_rs.append({'ip':rs_t['ip'], 'ct_id':int(m.group(2)), 'ct_name': m.group(3), 'ct_val':int(m.group(4)), 'timestamp':int(m.group(5)),'message':body.replace("\n", " ")})
 
 	return arr_rs
-
-def parsePostDatax(body): # body type byte, including image
-    # 'getstr': 'face/?ip=192.168.1.128&unitname=NS102HD-6117F&datetime=Fri Mar 25 20:27:59 2022&dts=1648211279.972261&type=face&info=ch=0&streamno=0&zoneno=0&uid=46118&status=begin&timestamp=1648211279,972261&position=21700,12530,54520,40460&id=F0DDF3E2-6E73-4C33-A1BD-BF', 
-    # 'eventinfo': 'ip=192.168.1.128&usn=HA0A00A80&productid=B101&datetime=2022-03-25T12:28:00Z&isotime=2022-03-25T20:28:00+0800&ch=0&type=face&rulesname=face&thumbnailcnt=2&hassnapshot=no&hasthumbnail=yes'
-    tmp = ""
-    rs = {'type':None, 'ip':None, 'unitname':None, 'usn':None, 'productid':None, 'timestamp':None, 'datetime':None, 'getstr':None, 'eventinfo':None, 'img_b64':None, 'snapshot_b64':None}
-
-    regex_boundary  = re.compile(b"Content-Type: multipart/form-data; boundary=([\-\w]+)", re.IGNORECASE)
-    regex_getstr    = re.compile(b"POST /(\S+) HTTP/1.1", re.IGNORECASE)
-    regex_eventinfo = re.compile(b'Content-Disposition: form-data; name="eventinfo"\r\n\r\n(.+)\n', re.IGNORECASE)
-    regex_thumbnail = re.compile(b'Content-Disposition: form-data; name="image_(\d+)"; filename="image_(\d+).jpg"\r\nContent-Type: image/jpeg', re.IGNORECASE)
-    regex_snapshot  = re.compile(b'Content-Disposition: form-data; name="snapshot"; filename="([\w_]+).jpg"\r\nContent-Type: image/jpeg', re.IGNORECASE)
-
-    m = regex_boundary.search(body[0:600])
-    if m:
-        sbound = m.group(1)
-
-    blocks = body.split(sbound)
-
-    for block in blocks:
-        m = regex_getstr.search(block)
-        if not rs['getstr'] and m:
-            # rs['getstr'] = unquote((regex_getstr.search(block)).group(1).decode('ascii')).strip()
-            rs['getstr'] = unquote((m).group(1).decode('ascii')).strip()
-            continue
-
-        m =  regex_eventinfo.search(block)
-        if not rs['eventinfo'] and m:
-            rs['eventinfo'] = m.group(1).decode('ascii').strip()
-            continue
-
-        if not rs['img_b64'] and regex_thumbnail.search(block):
-            st = block.find(b'Content-Type: image/jpeg') + len(b'Content-Type: image/jpeg')
-            ed = len(block)-2
-            tmp = block[st:ed]
-            tmp = b'data:image/jpg;base64,' + base64.b64encode(tmp.strip())
-            rs['img_b64'] =  tmp.decode('ascii')
-
-        elif not rs['snapshot_b64'] and regex_snapshot.search(block):
-            st = block.find(b'Content-Type: image/jpeg') + len(b'Content-Type: image/jpeg')
-            ed = len(block)-2
-            tmp = block[st:ed]
-            tmp =  b'data:image/jpg;base64,' + base64.b64encode(tmp.strip())			
-            rs['snapshot_b64'] = tmp.decode('ascii')
-
-    rs_t = dict(parse_qsl(urlparse("?" + rs['getstr']).query))
-    rs['unitname'] = rs_t['unitname']
-    rs['getstr'] = rs['getstr'][:255]
-
-    rs_t = dict(parse_qsl(urlparse("?" + rs['eventinfo']).query))
-    rs['ip'], rs['usn'], rs['productid'], rs['type'] = rs_t['ip'], rs_t['usn'], rs_t['productid'], rs_t['type']
-    tss = time.strptime(rs_t['isotime'], "%Y-%m-%dT%H:%M:%S 0800")
-    rs['timestamp'] = int(time.mktime(tss) + TZ_OFFSET)
-    rs['datetime'] = time.strftime("%Y-%m-%d %H:%M:%S", tss)	
-    rs['eventinfo'] = rs['eventinfo'][0:255]		
-
-
-    return rs
-
-
 
 def parseEventData(body):
     arr_rs = []
@@ -330,7 +297,7 @@ def parseEventData(body):
     if not rs['timestamp']:
         rs['timestamp'] = rs_t.get('dts')
     
-    rs['timestamp'] = int(float(rs['timestamp'].replace(",","."))) + TZ_OFFSET
+    rs['timestamp'] = int(float(rs['timestamp'].replace(",",".")))
     # print('timestamp', rs['timestamp'])
 
     rs['datetime'] = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(rs['timestamp']))    
@@ -341,8 +308,6 @@ def parseEventData(body):
         rs['ct_id']     = int(m.group(2))
         rs['ct_name']   = m.group(3)
         rs['ct_val']    = int(m.group(4))
-        # rs['timestamp'] = int(m.group(5)) + TZ_OFFSET
-        # rs['datetime']  = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(rs['timestamp']))    
 
         arr_rs.append(rs)
     

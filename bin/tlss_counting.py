@@ -22,21 +22,15 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
-
 import os, time, sys
 import base64
 import threading
 import socket
 
-from functions_s import (send_tlss_command, recv_tlss_message, configVars, addSlashes, log, modifyConfig, info_to_db, message)
+from functions_s import (send_tlss_command, recv_tlss_message, configVars, addSlashes, log, modifyConfig, CGIS, message)
 from parse_functions import parseParam, parseCountReport, parseHeatmapData
 from db_functions import(MYSQL, getWriteParam, putWriteParam, updateParam, updateSnapshot, getLatestTimestamp, updateCountingReport, updateHeatmap, getDeviceInfoFromDB)
-from cgis import arr_cgi_str, device_family_str
-
-# info_to_db('tlss_counting', change_log)
-# message(change_log)
-
+# from cgis import arr_cgi_str, device_family_str
 
 def tlss_cgi(conn, cgi_str, timeout=2):
     send_tlss_command(conn, cgi_str)
@@ -45,13 +39,11 @@ def tlss_cgi(conn, cgi_str, timeout=2):
     return data
 
 def check_device_family(conn):
-    for dev in device_family_str:
-        data = tlss_cgi(conn, device_family_str[dev])
+    for dev in CGIS['device_family']:
+        data = tlss_cgi(conn, CGIS['device_family'][dev])
         if data and data.find(b'No input file specified') < 0:
             return dev
-
     return False
-
 
 def putParam(conn, cgis=[]):
     data = []
@@ -61,16 +53,14 @@ def putParam(conn, cgis=[]):
     return data
 
 def getParam(conn=None, device_family='IPN'):
-    cgi_str = arr_cgi_str['param'][device_family]
-
     data = b''
-    ex_cgi = cgi_str.split(',')
-    for cgi in ex_cgi:
+    for cgi in CGIS["query_device"]["param"][device_family]:
         # print (cgi)
         rs = tlss_cgi(conn, cgi.strip(), timeout=2)
         spos = 0
         if device_family == 'IPN' or device_family == 'IPE':
-            spos = rs.index(b"\n\r")
+            # spos = rs.index(b"\n\r")
+            spos = rs.find(b"\n\r")
         data += rs[spos:].lstrip()
         
     data = data.replace(b"Brand.prodshortname", b"BRAND.Product.shortname")
@@ -78,10 +68,10 @@ def getParam(conn=None, device_family='IPN'):
     return (parseParam(data))
 
 def getSnapshot(conn=None, device_family='IPN', format='b64'):
-    cgi_str = arr_cgi_str['snapshot'][device_family]
-    data = tlss_cgi(conn, cgi_str, timeout=2)
+    data = tlss_cgi(conn, CGIS["query_device"]["snapshot"][device_family], timeout=2)
     if device_family == 'IPN' or device_family == 'IPE':
-        spos = data.index(b"\n\r")
+        # spos = data.index(b"\n\r")
+        spos = data.find(b"\n\r")
         data = data[spos:].lstrip()
 
     if format == 'b64':
@@ -90,11 +80,10 @@ def getSnapshot(conn=None, device_family='IPN', format='b64'):
     return data
 
 def getCountReport(conn=None, device_family='IPN', from_t='2022/01/01', to_t='now'):
-    cgi_str = arr_cgi_str['countreport'][device_family] %(from_t, to_t)
-
-    data = tlss_cgi(conn, cgi_str, timeout=2)
+    data = tlss_cgi(conn, CGIS["query_device"]["countreport"][device_family] %(from_t, to_t), timeout=2)
     if device_family == 'IPN' or device_family == 'IPE':
-        spos = data.index(b"\n\r")
+        # spos = data.index(b"\n\r")
+        spos = data.find(b"\n\r")
         data = data[spos:].lstrip()
 
     data = data.replace(b'Time:', b'Records:')
@@ -102,16 +91,15 @@ def getCountReport(conn=None, device_family='IPN', from_t='2022/01/01', to_t='no
     return (parseCountReport(data))
 
 def getHeatmap(conn=None, device_family='IPN', from_t='2022-01-01', to_t='now'):
-    if not arr_cgi_str["heatmap"][device_family]:
+    if not CGIS["query_device"]["heatmap"][device_family]:
         return False
 
-    cgi_str = arr_cgi_str['heatmap'][device_family] %(from_t, to_t)
-
-    data = tlss_cgi(conn, cgi_str, timeout=2)
+    data = tlss_cgi(conn, CGIS["query_device"]["heatmap"][device_family] %(from_t, to_t), timeout=2)
     if device_family == 'IPN' or device_family == 'IPE':
-        spos = data.index(b"\n\r")
+        # spos = data.index(b"\n\r")
+        spos = data.find(b"\n\r")
         data = data[spos:].lstrip()
-
+    # print (data)
     return (parseHeatmapData(data))
 
 def testGetFunctions(port=65000):
@@ -120,6 +108,7 @@ def testGetFunctions(port=65000):
     s.listen(1) 
 
     conn, addr = s.accept()
+    print (addr)
     device_info = recv_tlss_message(conn, timeout=2)
     print (device_info)
     dev_family = check_device_family(conn)
@@ -138,17 +127,18 @@ def testGetFunctions(port=65000):
     conn.close()
     s.close()  
   
+# testGetFunctions(port=5000)
+# sys.exit()
+
+
 def writeParam(conn, device_info=''):
     regdate = time.strftime("%Y-%m-%d %H:%M:%S")
     arr_cmd = getWriteParam(device_info)
-    if (arr_cmd):
+    if arr_cmd:
         print ("write cgi commands to %s at %s" %(device_info, regdate))
         putParam(conn, cgis=arr_cmd)
         putWriteParam(device_info, [])
     return True  
-
-
-
 
 def tlss_client_thread(conn):
     device_info_b = recv_tlss_message(conn)
@@ -175,7 +165,8 @@ def tlss_client_thread(conn):
 
     writeParam(conn=conn, device_info=device_info)
     param = getParam(conn, device_family=dev_family)
-    if param :
+    # print (param)
+    if param['ret'] :
         updateParam(device_info, param)
     snapshot = getSnapshot(conn, device_family=dev_family, format='b64')
     if snapshot:
@@ -186,18 +177,20 @@ def tlss_client_thread(conn):
     if dev_info: # False if not in db
         if dev_info['db_name'] != 'none':
             if dev_info['countrpt'] == 'y':
-                from_t, readflag, ts = getLatestTimestamp(MYSQL['commonCounting'], device_info=device_info)
+                from_t, dt, readflag, ts = getLatestTimestamp(MYSQL['commonCounting'], device_info=device_info)
                 if readflag > 600:
+                    print("tlss.counting:", device_info, from_t, readflag, ts)
                     crpt = getCountReport(conn, device_family=dev_family, from_t=from_t, to_t='now')
                     if crpt:
                         updateCountingReport(device_info, crpt)
 
             if dev_info['heatmap'] == 'y':
-                from_t, readflag, ts = getLatestTimestamp(MYSQL['commonHeatmap'], device_info=device_info)
+                from_t, dt, readflag, ts = getLatestTimestamp(MYSQL['commonHeatmap'], device_info=device_info)
                 if readflag >3600:
-                    print(from_t, end = "  ")
-                    from_t = time.strftime("%Y/%m/%d%%20%H:%M", time.gmtime(ts+3600))
-                    print(from_t)
+                    ts = time.mktime(dt)+3600
+                    from_t = time.strftime("%Y/%m/%d%%20%H:%M", time.localtime(ts))
+                    print("tlss.heatmap:", device_info, from_t, readflag, ts)
+
                     hm = getHeatmap(conn, device_family=dev_family, from_t=from_t, to_t='now')
                     if hm:
                         updateHeatmap(device_info, hm)

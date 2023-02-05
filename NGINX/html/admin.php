@@ -1,6 +1,6 @@
 <?PHP
 session_start();
-date_default_timezone_set ( "UTC" ); 
+// date_default_timezone_set ( "Asia/Seoul" ); 
 require_once $_SERVER['DOCUMENT_ROOT']."/libs/functions.php";
 require_once $_SERVER['DOCUMENT_ROOT']."/inc/common.php";
 
@@ -21,6 +21,7 @@ else if (isset($_GET['fr']) && $_GET['fr'] == 'system') {
 }
 
 logincheck();
+define('TZ_OFFSET', 3600*9);
 
 /* ######################################################################################################### */
 if(($_COOKIE['role'] != 'admin') and  ($_COOKIE['role'] != 'root') and ($_GET['fr'] != 'profile')) {
