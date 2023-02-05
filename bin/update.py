@@ -31,7 +31,7 @@ from http.client import HTTPConnection
 import uuid
 
 _ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))
-os.chdir(_ROOT_DIR + "\\bin")
+os.chdir(_ROOT_DIR + "/bin")
 # print(os.getcwd())
 
 args = ""
@@ -44,59 +44,50 @@ _UPDATE_PAGE = "https://github.com/hanskimvz/Cosilan097Beta/"
 
 def checkAvailabe():
     # check updage page and vaild page ? some sites have protect web page from external sites
+    fname = _ROOT_DIR + "/bin/valid"
+    mtime0 = 0
+    if os.path.isfile(fname):
+         mtime0 =  int(os.path.getmtime(fname))
+
     if os.name == 'nt':
-        cmd = _ROOT_DIR + "wget.exe https://raw.githubusercontent.com/hanskimvz/Cosilan097Beta/main/bin/filelist.json" 
-    server = ("github.com", 80)
-    conn = HTTPConnection(*server)
-    conn.putrequest("GET", "/hanskimvz/Cosilan097Beta/blob/main/bin/filelist.json") 
-    conn.endheaders()
-    rs = conn.getresponse()
-    print(rs.read())
-    
-    conn.close()
-    # blob/main/bin/filelist.json
-    # if not is_online(_SERVER_IP):
-        # print ("unknown IP or cannot reach")
-        # return False
+        cmd = _ROOT_DIR + "/bin/wget.exe https://raw.githubusercontent.com/hanskimvz/Cosilan097Beta/main/bin/valid -O " + fname
+    else :
+        cmd = "wget https://raw.githubusercontent.com/hanskimvz/Cosilan097Beta/main/bin/valid -O " + fname
 
-    # _MyPublicIP = getMyPublicIP()
-    # if _SERVER_IP != "" and _SERVER_IP == _MyPublicIP :
-    #         print ("SERVER IP and LOCAL MACHINE IP is the same, cannot updated.")
-    #         return False
-    # mac = "%012X" %(uuid.getnode())
-    # if _SERVER_MAC == mac :
-    #     print ("SERVER MAC and LOCAL MACHINE MAC is the same, cannot updated.")
-    #     return False
+    os.system(cmd)
+    mtime1 =  int(os.path.getmtime(fname))
+    with open(fname, "r")  as f:
+        body = f.read()
+    if mtime1 - mtime0  >0 and body.find("valid") >=0:
+        print (mtime0, mtime1, mtime1-mtime0, body)
+        return True
 
-    # return True
+    return False
 
-checkAvailabe()
-sys.exit()
 def update():
     if not checkAvailabe():
         return False
-    server = (_SERVER_IP, _SERVER_PORT)
-    conn = HTTPConnection(*server)
+
     print ("Downloading update main file ....", end="")
     fname = "update_main.py"
-    
-    conn.putrequest("GET", "/download.php?file=bin/%s" %fname) 
-    conn.endheaders()
-    rs = conn.getresponse()
-    if rs:
-        with open("%s\\bin\\%s" %(_ROOT_DIR, fname), "wb")  as f:
-            f.write(rs.read())
-        
-        print (".... download completed")
-    conn.close()
+
+    if os.name == 'nt':
+        cmd = _ROOT_DIR + "/bin/wget.exe https://raw.githubusercontent.com/hanskimvz/Cosilan097Beta/main/bin/update_main.py -O " + fname
+    else :
+        cmd = "wget https://raw.githubusercontent.com/hanskimvz/Cosilan097Beta/main/bin/update_main.py -O " + fname
+
+    os.system(cmd)
+    print ("... done")
+    time.sleep(1)
 
     os.chdir("%s/bin" %_ROOT_DIR)
+    import update_main
     
-    if os.name == 'nt':
-        os.system("python3.exe %s %s" %(fname, args))
+    # if os.name == 'nt':
+    #     os.system("python3.exe %s %s" %(fname, args))
     
-    elif os.name == 'posix':
-        os.system("/usr/bin/python3 %s" %fname )
+    # elif os.name == 'posix':
+    #     os.system("/usr/bin/python3 %s" %fname )
     
 
 if __name__ == '__main__':

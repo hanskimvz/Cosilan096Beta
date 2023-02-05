@@ -27,79 +27,6 @@
 
 import time, sys, os, uuid
 from http.client import HTTPConnection
-
-_ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))
-_SERVER_IP = '49.235.119.5'
-_SERVER_MAC = "525400C9FE37"
-_SERVER_PORT = 80
-
-
-### update python 3.8.8. if need
-def checkPythonBin():
-    # True : need to download, False: no need to download
-    if os.name != 'nt':
-        print ("This function is only for windows operationg system")
-        return False
-    try:
-        import psutil
-        import cv2
-        import PIL
-    except Exception as e:
-        print(e)
-        return True
-    
-    pv = sys.version_info
-    if not (int(pv.major >=3) and int(pv.minor) >=8 and int(pv.micro) >=8):
-        return True
-    return False
-
-def downloadPatchTool():
-    import zipfile
-    global _ROOT_DIR, _SERVER_IP, _SERVER_PORT
-    target_dir = "%s\\bin\\patch\\" %_ROOT_DIR
-    if not os.path.isdir(target_dir):
-        os.mkdir(target_dir)
-    os.chdir(target_dir)
-    fname = "patchtool_python.zip"
-    server = (_SERVER_IP, _SERVER_PORT)
-    conn = HTTPConnection(*server)
-    print ("downloading")
-    conn.putrequest("GET", "/download.php?file=%s" %fname) 
-    conn.endheaders()
-    rs = conn.getresponse()
-    with open(fname, "wb")  as f:
-        f.write(rs.read()) 
-
-    conn.putrequest("GET", "/download.php?file=../bin/patch.py") 
-    conn.endheaders()
-    rs = conn.getresponse()
-    with open("patch.py", "wb")  as f:
-        f.write(rs.read())        
-
-    print ("downloaded")
-
-    zf = zipfile.ZipFile(fname,'r')
-    for fname in zf.namelist():
-        try:
-            zf.extract(fname, target_dir)
-        except Exception as e:
-            print (e)
-
-if __name__ == '__main__':
-    x = checkPythonBin()
-    if x :
-        downloadPatchTool()
-        os.chdir( "%s\\bin\\patch\\" %(_ROOT_DIR))
-        print ("Excuting patch.py")
-        cmdstr = "python3.exe patch.py %d" %(int(os.getpid()))
-        os.system(cmdstr)
-        sys.exit()
-    else:
-        print ("No need to update new python")
-
-
-############################################################################################################################################################
-
 import socket
 import requests
 import json, re
@@ -124,6 +51,7 @@ if opt._SERVER_IP:
 _WIN_GUI = True if opt._WIN_GUI and os.name == 'nt' else False
 _CUSTOM_DB = opt.CUSTOM_DB if opt.CUSTOM_DB  else 'cnt_demo'
 
+_ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))
 MYSQL = {'HOST':'localhost', 'USER':'root', 'PASS':'rootpass','PATH':'', 'PORT':0, 'VERSION':'', 'UPTIME':'', 'RUNNING':False}
 
 version = {
