@@ -31,13 +31,16 @@ import socket
 import requests
 import json, re
 import pymysql, sqlite3
-import py_compile
 import logging
 import locale
 import optparse
 from  configparser import ConfigParser
 import uuid
 import shutil
+
+
+print ("update codes have NOT completed yet")
+sys.exit()
 
 op = optparse.OptionParser()
 op.add_option("-V", "--version", action="store_true", dest="_VERSION")
@@ -55,8 +58,8 @@ _ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))
 MYSQL = {'HOST':'localhost', 'USER':'root', 'PASS':'rootpass','PATH':'', 'PORT':0, 'VERSION':'', 'UPTIME':'', 'RUNNING':False}
 
 version = {
-    "bin": 0.96,
-    "webpage":0.74,
+    "bin": 0.97,
+    "webpage":0.75,
     "param": 0.95,
     "update": 0.94,
     "code": int(time.time()),
@@ -80,44 +83,30 @@ logging.basicConfig(
 # BASEDIR=/var/www/
 
 def get_fileist():
+    # https://raw.githubusercontent.com/hanskimvz/Cosilan097Beta/main/bin/filelist.json
     global _ROOT_DIR
-    server = (_SERVER_IP, _SERVER_PORT)
-    fname = "../bin/filelist.json"
-    conn = HTTPConnection(*server)
-    conn.putrequest("GET", "/download.php?file=%s" %fname) 
-    conn.endheaders()
-    rs = conn.getresponse()
-    conn.close()
+    fname = _ROOT_DIR + "/bin/filelist.json"
+    if os.name == 'nt':
+        cmd = _ROOT_DIR + "/bin/wget.exe https://raw.githubusercontent.com/hanskimvz/Cosilan097Beta/main/bin/filelist.json -O " + fname
+    else :
+        cmd = "wget https://raw.githubusercontent.com/hanskimvz/Cosilan097Beta/main/bin/filelist.json -O " + fname
+    os.system(cmd)
 
-    body = ""
-    for line in rs.read().decode().splitlines():
+    with open(fname, "r", encoding="utf8") as f:
+        body = f.read()
+
+    text = ""
+    for line in body.splitlines():
         line = line.split("#")[0]
         line = line.split("//")[0]
         line = line.strip()
         
         if not line:
             continue
-        body += line
+        text += line
 
-    return json.loads(body)
+    return json.loads(text)
 
-# def get_fileist():
-#     global _ROOT_DIR
-#     fname = _ROOT_DIR + "/bin/filelist.json"
-#     with open(fname, "r", encoding="utf8") as f:
-#         body = f.read()
-
-#     text = ""
-#     for line in body.splitlines():
-#         line = line.split("#")[0]
-#         line = line.split("//")[0]
-#         line = line.strip()
-        
-#         if not line:
-#             continue
-#         text += line
-
-#     return json.loads(text)
 
 ########################################################################################################################################################
 #####################################################   File download   ################################################################################
@@ -146,8 +135,9 @@ def getMyPublicIP():
 
     return _my_ip
 
-
 def checkAvailabe():
+    # check updage page and vaild page ? some sites have protect web page from external sites
+    errFlag = False
     def showMsg():
         prints(msg)
         if _WIN_GUI:
@@ -155,65 +145,30 @@ def checkAvailabe():
             if errFlag:
                 label['txt_server_state'].configure(fg="red")
 
-    errFlag = False
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server = (_SERVER_IP, _SERVER_PORT)
-    s.settimeout(1)
+    fname = _ROOT_DIR + "/bin/valid"
+    mtime0 = 0
+    if os.path.isfile(fname):
+         mtime0 =  int(os.path.getmtime(fname))
 
-    try:
-        s.connect(server)
-        msg = "Server is online"
-        strn = "Online"
-    except Exception as e:
-        s.close()
-        msg = "Server is offline"
-        strn = "Offline"
-        errFlag = True
-    s.close()
-    showMsg()
-    
-    if errFlag:
-        return False
-
-    conn = HTTPConnection(*server)
-    conn.putrequest("GET", "/inc/check_valid.php") 
-    conn.endheaders()
-    rs = conn.getresponse()
-    server_ts = rs.read().decode()
-    conn.close()
-    
-
-    try :
-        server_ts = int(server_ts)
-    except Exception as e:
-        errFlag = True
-        server_ts = 0
-
-    if abs(int(server_ts) - int(time.time())) > 10:
-        msg = "Server page not accessable %d, %d" %(int(server_ts), int(time.time()))
-        strn = "Page error"
-        errFlag = True
-    else:
-        msg = "Server page is OK"
-        strn = "Page OK"
-
-    showMsg()        
-
-    if errFlag:
-        return False
-
-    mac = "%012X" %(uuid.getnode())
-    if _SERVER_MAC == mac :
-        msg = "Server MAC and machine MAC are the same", "error"
-        strn = "Unavailable"
-        errFlag = True
+    if os.name == 'nt':
+        cmd = _ROOT_DIR + "/bin/wget.exe https://raw.githubusercontent.com/hanskimvz/Cosilan097Beta/main/bin/valid -O " + fname
     else :
-        msg = "Server MAC and machine MAC are not the same"
-        strn = "Available"
+        cmd = "wget https://raw.githubusercontent.com/hanskimvz/Cosilan097Beta/main/bin/valid -O " + fname
+
+    os.system(cmd)
+    mtime1 =  int(os.path.getmtime(fname))
+    with open(fname, "r")  as f:
+        body = f.read()
+    if mtime1 - mtime0  >0 and body.find("valid") >=0:
+        print (mtime0, mtime1, mtime1-mtime0, body)
+        errFlag = False
+    else :
+        errFlag = True
+
     showMsg()
     if errFlag:
-        return False
-    return True
+        return False    
+
 
 def patchHtml():
     global _SERVER_IP, _SERVER_PORT
