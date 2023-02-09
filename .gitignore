@@ -9,9 +9,10 @@ _unused
 Test
 NGINX/html/help
 NGINX/html/_uload_snapshot.php
-NGINX/html/backup_html._uload_snapshot
+NGINX/html/backup_html.sh
 NGINX/html/cosilanstatus.php
 NGINX/html/download.php
+NGINX/html/view_snapshot.php
 
 bin/genLic.py
 bin/patch.py
