@@ -191,7 +191,7 @@
     "mysql": {
         "charset": "utf8",
         "db": "cnt_demo",
-        "host": "49.235.119.5",
+        "host": "192.168.1.250",
         "password": "13579",
         "port": "3306",
         "user": "rt_user"
@@ -205,5 +205,5 @@
         "min": 0
     },
     "refresh_interval": 5,
-    "template": "template1.json"
+    "template": "template5.json"
 }

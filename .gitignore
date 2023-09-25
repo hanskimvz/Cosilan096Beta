@@ -7,12 +7,17 @@ backupDB.bat
 
 _unused
 Test
+GateController
+help_docs
 NGINX/html/help
 NGINX/html/_uload_snapshot.php
 NGINX/html/backup_html.sh
 NGINX/html/cosilanstatus.php
 NGINX/html/download.php
 NGINX/html/view_snapshot.php
+NGINX/html/gateControl.php
+NGINX/html/gateControl
+NGINX/html/test
 
 bin/genLic.py
 bin/patch.py

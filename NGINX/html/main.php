@@ -2,6 +2,7 @@
 session_start();
 date_default_timezone_set ( "UTC" ); 
 // print "<pre>"; print_r($_COOKIE); print "</pre>";
+
 require_once $_SERVER['DOCUMENT_ROOT']."/libs/functions.php";
 require_once $_SERVER['DOCUMENT_ROOT']."/inc/common.php";
 logincheck();

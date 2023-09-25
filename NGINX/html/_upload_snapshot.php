@@ -36,7 +36,8 @@ if ($_FILES) {
     $fp = fopen($fname,'r');
     $snapshot =  fread($fp, filesize($fname));
     fclose($fp);
-    $snapshot =  addslashes(base64_encode($snapshot));
+    // $snapshot =  addslashes(base64_encode($snapshot));
+    $snapshot = addslashes("data:image/jpg;base64,".base64_encode($snapshot));
 }
 else {
     $snapshot = "";

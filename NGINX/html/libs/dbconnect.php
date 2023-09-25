@@ -11,19 +11,27 @@ for ($i=0; $i<3; $i++) {
 }
 
 $fname = $ROOT_DIR."/bin/param.db";
+
+// print(get_current_user());
+
 // Centos 8.x need to readwrite : selinux
 // chcon  -t httpd_sys_rw_content_t /home/www/bin/param.db
 // chcon  -t httpd_sys_rw_content_t /home/www/bin/
+// chown user..
 
-$db = new SQLite3($fname);
-	
+ $db = new SQLite3($fname);
+
 $sq = "select groupPath, entryName, entryValue from param_tbl ";
-$rs = $db->query($sq);
+
+ $rs = $db->query($sq);
+//  print_r($db->lastErrorMsg());
+
 $configVars = array();
 while ($row = $rs->fetchArray()) {
 	$configVars[$row['groupPath'].".".$row['entryName']] = $row['entryValue'];
 }
-$db->close();
+
+ $db->close();
 
 $MYSQL_PORT = $configVars['software.mysql.port'];
 if (!$MYSQL_PORT) {

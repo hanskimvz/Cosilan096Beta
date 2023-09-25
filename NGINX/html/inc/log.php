@@ -289,6 +289,7 @@ if($LOG_SOURCE == 'SQLITE'){
 else if($LOG_SOURCE == 'FILE'){
     $browse_dir = "";
     $fnames = dirToArray($ROOT_DIR."/bin/log");
+    // print_r ($fnames);
     for($i=0; $i<sizeof($fnames); $i++) {
         if ($fnames[$i] == 'log.db'){
             continue;

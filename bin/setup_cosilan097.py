@@ -799,7 +799,7 @@ def startInstall():
         if MYSQL['LOGIN'] == 'fail':
             prints ("Wrong root password")
             return False
-
+    print (MYSQL)
     # backupTable('common.counting_report_10min')
     # backupTable('cnt_demo.count_tenmin')
     # backupTable('cnt_demo.age_gender')

@@ -444,6 +444,7 @@ def editScreen(win):
                 arr[i]['padding'] = [int(lvar['padX'].get()), int(lvar['padY'].get())]
                 arr[i]['position'] = [int(lvar['posX'].get()), int(lvar['posY'].get())]
                 arr[i]['size'] = [int(lvar['width'].get()), int(lvar['height'].get())]
+                # arr[i]['align'] = lvar['align'].get()
                 arr[i]['flag'] = 'y' if int(lvar['use'].get()) else 'n'
 
                 if sel.startswith('picture') or sel.startswith('video'):
